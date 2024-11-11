@@ -5,7 +5,7 @@ const PatientDisplay = () => {
 
     useEffect(() => {
         const fetchPatientData = async () => {
-            const response = await fetch('/api/patient-onboarding');
+            const response = await fetch('http://localhost:5000/api/patient-onboarding');
             const { patients } = await response.json();
             setPatients(patients);
         };
@@ -13,7 +13,7 @@ const PatientDisplay = () => {
         fetchPatientData();
     }, []);
 
-    if (patients.length === 0) return <p>Loading...</p>;
+    if (!patients || patients.length === 0) return <p>Loading...</p>;
 
     return (
         <div>
