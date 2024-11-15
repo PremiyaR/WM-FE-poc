@@ -33,7 +33,7 @@ const PatientDetails = () => {
     e.preventDefault();
     try {
       const publicKey = await fetchPublicKey(); // Ensure this fetch is correct
-
+    console.log('--------------------------/publicKey', publicKey)
       // Generate AES key directly as a Buffer (128-bit key)
       const aesKeyBuffer = crypto.randomBytes(16); // 16 bytes for AES-128
 
@@ -45,18 +45,22 @@ const PatientDetails = () => {
         JSON.stringify(formData),
         aesKey
       ).toString();
-
+      console.log('`-----------------------aesKeyBuffer::', aesKeyBuffer)
+      console.log(`---crypto.constants.RSA_PKCS1_OAEP_PADDING:`, crypto.constants.RSA_PKCS1_OAEP_PADDING)
       // Encrypt AES key with RSA public key
       const encryptedAESKey = crypto
         .publicEncrypt(
           {
             key: publicKey,
-            padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-            oaepHash: "sha256", // Use the same hashing algorithm as in the backend
+            padding: crypto.constants.RSA_PKCS1_PADDING,
+            // oaepHash: "sha256", // Ensure the same hashing algorithm as the backend
           },
-          aesKeyBuffer
+          aesKeyBuffer // Use the AES key buffer directly
         )
         .toString("base64"); // Convert encrypted AES key to base64
+
+        console.log("Raw AES Key (Base64):", aesKey);
+        console.log("Encrypted AES Key (Base64):", encryptedAESKey);
 
       // Send encrypted data and AES key to the backend
       const response = await fetch(
