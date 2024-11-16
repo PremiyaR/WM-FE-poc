@@ -3,8 +3,6 @@ import crypto from "crypto-browserify";
 
 const { useState } = require("react");
 
-const secretKey = "secretKey123"; //needs to be an environment variable.
-
 const PatientDetails = () => {
   const fetchPublicKey = async () => {
     const response = await fetch(
@@ -24,39 +22,28 @@ const PatientDetails = () => {
     setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
 
-  //Encryption of the data using AES.
-  const encryptData = (data) => {
-    return CryptoJS.AES.encrypt(JSON.stringify(data), secretKey).toString();
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const publicKey = await fetchPublicKey(); // Ensure this fetch is correct
 
-      // Generate AES key directly as a Buffer (128-bit key)
-      const aesKeyBuffer = crypto.randomBytes(16); // 16 bytes for AES-128
-
-      // Convert AES key buffer to base64 for CryptoJS compatibility
-      const aesKey = aesKeyBuffer.toString("base64");
+      const aesString = crypto.randomBytes(32).toString('base64');
 
       // Encrypt form data with AES key
       const encryptedData = CryptoJS.AES.encrypt(
         JSON.stringify(formData),
-        aesKey
+        aesString
       ).toString();
 
       // Encrypt AES key with RSA public key
-      const encryptedAESKey = crypto
-        .publicEncrypt(
-          {
+      const buffer = Buffer.from(aesString);
+      const encryptedKey = crypto.publicEncrypt(
+        {
             key: publicKey,
-            padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-            oaepHash: "sha256", // Use the same hashing algorithm as in the backend
-          },
-          aesKeyBuffer
-        )
-        .toString("base64"); // Convert encrypted AES key to base64
+            padding: crypto.constants.RSA_PKCS1_PADDING,
+        },
+        buffer
+      ).toString('base64');
 
       // Send encrypted data and AES key to the backend
       const response = await fetch(
@@ -64,7 +51,7 @@ const PatientDetails = () => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ encryptedData, encryptedAESKey }),
+          body: JSON.stringify({ encryptedData, encryptedKey }),
         }
       );
 
