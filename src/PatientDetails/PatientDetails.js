@@ -40,7 +40,8 @@ const PatientDetails = () => {
       const encryptedKey = crypto.publicEncrypt(
         {
             key: publicKey,
-            padding: crypto.constants.RSA_PKCS1_PADDING,
+            padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+            oaepHash: "sha256",
         },
         buffer
       ).toString('base64');
