@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import CryptoJS from "crypto-js"; 
+import { useState, useEffect } from "react"; 
 import crypto from "crypto-browserify"; 
 
 const PatientDisplay = () => {
@@ -7,20 +6,6 @@ const PatientDisplay = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPrivateKey = async () => {
-      try {
-        const response = await fetch(
-          "http://localhost:5000/api/patient-onboarding/private-key"
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch private key");
-        }
-        return response.text(); // Private key as a plain string
-      } catch (error) {
-        console.error("Error fetching private key:", error);
-      }
-    };
-
     const fetchAndDecryptPatientData = async () => {
       try {
         const response = await fetch(
@@ -31,25 +16,15 @@ const PatientDisplay = () => {
         }
         const encryptedPatients = await response.json();
 
-        const privateKey = await fetchPrivateKey();
-
         const decryptedPatients = encryptedPatients.map((patient) => {
-          const { encryptedData, encryptedKey } = patient;
-
-          const buffer = Buffer.from(encryptedKey.toString(), 'base64')
-
-          // Decrypt AES Key using private key
-          const decryptedAESKey = crypto.privateDecrypt(
-            {
-              key: privateKey,
-              padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-              oaepHash: "sha256",
-            },
-            buffer
-          ).toString();
-
-          const bytes = CryptoJS.AES.decrypt(encryptedData, decryptedAESKey);
-          const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
+          const { encryptedData, decryptedAESKey } = patient;
+          console.log('encryptedData ---------------->', encryptedData);
+          console.log('decryptedAESKey-------------->', decryptedAESKey);
+          
+          //Data is decrypted from the decryptedKey got from the backend.
+          const decipher = crypto.createDecipheriv("aes-256-cbc",Buffer.from (decryptedAESKey,"base64"), Buffer.alloc(16,0));
+          let decryptedData = decipher.update(encryptedData,"base64","utf8");
+          decryptedData += decipher.final("utf8")
 
           return JSON.parse(decryptedData); 
         });

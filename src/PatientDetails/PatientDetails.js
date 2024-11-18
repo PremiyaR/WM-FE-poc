@@ -1,4 +1,3 @@
-import CryptoJS from "crypto-js";
 import crypto from "crypto-browserify";
 
 const { useState } = require("react");
@@ -25,26 +24,16 @@ const PatientDetails = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const publicKey = await fetchPublicKey(); // Ensure this fetch is correct
+      const publicKey = await fetchPublicKey(); // Fetching the public key.
 
+      //Generation of AES key randomly for every data submit.
       const aesString = crypto.randomBytes(32).toString('base64');
 
-      // Encrypt form data with AES key
-      const encryptedData = CryptoJS.AES.encrypt(
-        JSON.stringify(formData),
-        aesString
-      ).toString();
+      const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(aesString, "base64"), Buffer.alloc(16,0));
+      let encryptedData = cipher.update(JSON.stringify(formData),"utf8", "base64")
+      encryptedData += cipher.final("base64");
 
-      // Encrypt AES key with RSA public key
-      const buffer = Buffer.from(aesString);
-      const encryptedKey = crypto.publicEncrypt(
-        {
-            key: publicKey,
-            padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-            oaepHash: "sha256",
-        },
-        buffer
-      ).toString('base64');
+      const encryptedKey = crypto.publicEncrypt(publicKey, Buffer.from(aesString))
 
       // Send encrypted data and AES key to the backend
       const response = await fetch(
@@ -52,7 +41,7 @@ const PatientDetails = () => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ encryptedData, encryptedKey }),
+          body: JSON.stringify({encryptedData: encryptedData,encryptedKey: encryptedKey.toString("base64") }),
         }
       );
 
